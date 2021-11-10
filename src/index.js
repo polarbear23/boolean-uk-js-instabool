@@ -26,7 +26,8 @@
 
 
 function createCards(){
-    const cardContainer = document.querySelector(".image-container")
+    const cardContainer = document.querySelector(".image-container");
+    //cardContainer.innerHTML = "";
     fetch("http://localhost:3000/images")
     .then((response) => {
         return response.json();
@@ -51,8 +52,19 @@ function createCards(){
                 for(let j = 0; j < comments.length; j++){
                     if(images[i].id === comments[j].imageId){
                         const commentEl = document.createElement("li");
+                        const deleteBtn = document.createElement("button");
+                        deleteBtn.innerText = "Delete";
+                        deleteBtn.addEventListener("click", (e) => {
+                            fetch(`http://localhost:3000/comments/${comments[j].id}`, {
+                                method: "DELETE",
+                            })
+                            .then(()=>{
+                                removeElements();
+                                createCards();
+                            })
+                        });
                         commentEl.innerText = comments[j].content;
-                        commentsContainer.appendChild(commentEl);
+                        commentsContainer.append(commentEl,deleteBtn);
                     }
                 }
                 imageCard.appendChild(commentsContainer);
@@ -64,6 +76,13 @@ function createCards(){
     )
 }
 
+function removeElements(){
+    const cards = document.querySelectorAll(".image-card");
+    for(let i = 1; i < cards.length; i++){
+        cards[i].remove();
+    }
+}
+
 function createLikesSection(image){
     const likesSection = document.createElement("div");
     const likes = document.createElement("span");
@@ -71,6 +90,27 @@ function createLikesSection(image){
     likes.innerText = `${image.likes} likes`;
     const likeButton = document.createElement("button");
     likeButton.setAttribute("class", "like-button");
+    likeButton.style.backgroundImage = "url(/assets/like.svg)";
+    likeButton.style.backgroundRepeat = "no-repeat";
+    likeButton.style.height = "20px";
+    likeButton.style.width = "30px";
+
+    likeButton.addEventListener("click", (e)=>{
+        fetch(`http://localhost:3000/images/${image.id}`, {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                likes: image.likes + 1
+            })
+        })
+        .then(()=>{
+            removeElements();
+            createCards();
+        });
+    });
+
     likesSection.append(likes,likeButton);
     return likesSection;
 }
@@ -100,7 +140,11 @@ function createCommentForm(imageObject){
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(comment)
-        })    
+        })
+        .then(()=>{
+            removeElements();
+            createCards();
+        });
     });
     return commentForm;
 }
@@ -125,3 +169,26 @@ const cardInfo = fetch("http://localhost:3000/images")
 console.log(cardInfo);
 createCards(cardInfo[0],cardInfo[1]);
 */
+
+function addEventToForm(){
+    const form = document.querySelector(".comment-form");
+    form.addEventListener("submit", () =>{
+        const inputs = form.querySelectorAll("input");
+        const title = inputs[0];
+        const imageSrc = inputs[1];
+        const image = {
+            "title": title,
+            "image": imageSrc,
+            "likes": 0
+        }
+        fetch("http://localhost:3000/images", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(image)
+        })    
+    });
+}
+
+addEventToForm();
